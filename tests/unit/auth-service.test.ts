@@ -23,6 +23,7 @@ function makeUser(overrides: Partial<User> = {}): User {
     email: 'usuario@example.com',
     passwordHash: 'hash',
     role: 'CANDIDATE',
+    companyName: null,
     createdAt: new Date(),
     offers: [],
     applications: [],
@@ -50,6 +51,7 @@ describe('auth.service', () => {
       email: 'usuario@example.com',
       password: 'password123',
       role: 'EMPLOYER',
+      companyName: 'Acme S.A.',
     });
 
     expect(result.token).toEqual(expect.any(String));
@@ -63,9 +65,35 @@ describe('auth.service', () => {
       expect.objectContaining({
         email: 'usuario@example.com',
         role: 'EMPLOYER',
+        companyName: 'Acme S.A.',
       }),
     );
     expect(mockedCreate.mock.calls[0]?.[0].passwordHash).not.toBe('password123');
+  });
+
+  it('persiste companyName en null para CANDIDATE', async () => {
+    mockedFindByEmail.mockResolvedValue(null);
+    mockedCreate.mockImplementation(async (data) =>
+      makeUser({
+        email: data.email,
+        passwordHash: data.passwordHash,
+        role: data.role,
+        companyName: data.companyName,
+      }),
+    );
+
+    await register({
+      email: 'persona@example.com',
+      password: 'password123',
+      role: 'CANDIDATE',
+    });
+
+    expect(mockedCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: 'CANDIDATE',
+        companyName: null,
+      }),
+    );
   });
 
   it('rechaza email duplicado antes de crear el usuario', async () => {

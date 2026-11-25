@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app';
 import { AppDataSource } from '../../src/db/data-source';
+import { AddCompanyName1795584000000 } from '../../src/db/migrations/1795584000000-add-company-name';
 import { InitialSchema1764038400000 } from '../../src/db/migrations/1764038400000-initial-schema';
 import {
   shouldRunIntegrationTests,
@@ -43,6 +44,7 @@ interface TestUser {
 
 const app = createApp();
 const migration = new InitialSchema1764038400000();
+const companyNameMigration = new AddCompanyName1795584000000();
 const password = 'password-de-prueba';
 
 const validOffer: OfferPayload = {
@@ -69,6 +71,7 @@ async function applyMigration(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
   try {
     await migration.up(queryRunner);
+    await companyNameMigration.up(queryRunner);
   } finally {
     await queryRunner.release();
   }
@@ -76,11 +79,13 @@ async function applyMigration(): Promise<void> {
 
 async function registerUser(
   role: 'EMPLOYER' | 'CANDIDATE' = 'EMPLOYER',
+  companyName = 'Empresa de prueba',
 ): Promise<TestUser> {
   const response = await request(app).post('/api/auth/register').send({
     email: `${randomUUID()}@test.local`,
     password,
     role,
+    ...(role === 'EMPLOYER' ? { companyName } : {}),
   });
 
   expect(response.status).toBe(201);
@@ -289,20 +294,36 @@ describe.skipIf(!shouldRunIntegrationTests())('Ofertas HTTP', () => {
     expect((await getOfferRow(offer.id))?.status).toBe('CLOSED');
   });
 
-  it('lista públicamente solo ofertas PUBLICADAS', async () => {
-    const employer = await registerUser();
+  it('lista públicamente solo ofertas PUBLICADAS con companyName', async () => {
+    const employer = await registerUser('EMPLOYER', 'Meta');
+    const other = await registerUser('EMPLOYER', 'Vercel');
     const published = await createOffer(employer.token, { title: 'Publicada' });
     const paused = await createOffer(employer.token, { title: 'Pausada' });
     await setStatus(employer.token, paused.id, 'PAUSED');
     const closed = await createOffer(employer.token, { title: 'Cerrada' });
     await setStatus(employer.token, closed.id, 'CLOSED');
+    const otherPublished = await createOffer(other.token, {
+      title: 'Otra empresa',
+    });
 
     const response = await request(app).get('/api/offers');
 
     expect(response.status).toBe(200);
-    expect(ids(response.body.offers)).toEqual([published.id]);
-    expect(response.body.offers[0]).not.toHaveProperty('employerId');
-    expect(response.body.offers[0]).not.toHaveProperty('employer');
+    expect(ids(response.body.offers)).toEqual(
+      [published.id, otherPublished.id].sort(),
+    );
+    const byId = new Map(
+      response.body.offers.map((offer: TestOffer) => [offer.id, offer]),
+    );
+    expect(byId.get(published.id)).toMatchObject({ companyName: 'Meta' });
+    expect(byId.get(otherPublished.id)).toMatchObject({ companyName: 'Vercel' });
+
+    for (const offer of response.body.offers) {
+      expect(offer).not.toHaveProperty('employerId');
+      expect(offer).not.toHaveProperty('employer');
+      expect(offer).not.toHaveProperty('email');
+      expect(offer).not.toHaveProperty('passwordHash');
+    }
   });
 
   it('devuelve 404 en el detalle público de ofertas pausadas o cerradas', async () => {
@@ -316,6 +337,11 @@ describe.skipIf(!shouldRunIntegrationTests())('Ofertas HTTP', () => {
     const visible = await request(app).get(`/api/offers/${published.id}`);
     expect(visible.status).toBe(200);
     expect(visible.body.offer.id).toBe(published.id);
+    expect(visible.body.offer.companyName).toBe('Empresa de prueba');
+    expect(visible.body.offer).not.toHaveProperty('employerId');
+    expect(visible.body.offer).not.toHaveProperty('employer');
+    expect(visible.body.offer).not.toHaveProperty('email');
+    expect(visible.body.offer).not.toHaveProperty('passwordHash');
 
     for (const id of [paused.id, closed.id]) {
       const response = await request(app).get(`/api/offers/${id}`);

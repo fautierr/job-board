@@ -33,6 +33,7 @@ export async function create(data: CreateOfferData): Promise<Offer> {
 export async function findPublished(filters: OfferFilters): Promise<Offer[]> {
   const query = repository()
     .createQueryBuilder('offer')
+    .innerJoinAndSelect('offer.employer', 'employer')
     .where('offer.status = :status', { status: 'PUBLISHED' });
 
   if (filters.category) {
@@ -57,7 +58,10 @@ export async function findPublished(filters: OfferFilters): Promise<Offer[]> {
 }
 
 export async function findPublishedById(id: string): Promise<Offer | null> {
-  return repository().findOne({ where: { id, status: 'PUBLISHED' } });
+  return repository().findOne({
+    where: { id, status: 'PUBLISHED' },
+    relations: { employer: true },
+  });
 }
 
 export async function findOwnedById(

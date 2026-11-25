@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app';
 import { getEnv } from '../../src/config/env';
 import { AppDataSource } from '../../src/db/data-source';
+import { AddCompanyName1795584000000 } from '../../src/db/migrations/1795584000000-add-company-name';
 import { InitialSchema1764038400000 } from '../../src/db/migrations/1764038400000-initial-schema';
 import { shouldRunIntegrationTests, TEST_DATABASE_NAME } from '../helpers/create-test-data-source';
 
@@ -20,6 +21,7 @@ const ENUM_NAMES = [
 
 const app = createApp();
 const migration = new InitialSchema1764038400000();
+const companyNameMigration = new AddCompanyName1795584000000();
 const password = 'password-de-prueba';
 
 async function resetSchema(): Promise<void> {
@@ -32,10 +34,18 @@ async function resetSchema(): Promise<void> {
   }
 }
 
-function registerUser(email = `${randomUUID()}@test.local`, role: 'CANDIDATE' | 'EMPLOYER' = 'CANDIDATE') {
+function registerUser(
+  email = `${randomUUID()}@test.local`,
+  role: 'CANDIDATE' | 'EMPLOYER' = 'CANDIDATE',
+) {
   return request(app)
     .post('/api/auth/register')
-    .send({ email, password, role });
+    .send({
+      email,
+      password,
+      role,
+      ...(role === 'EMPLOYER' ? { companyName: 'Empresa de prueba' } : {}),
+    });
 }
 
 describe.skipIf(!shouldRunIntegrationTests())('Autenticación HTTP', () => {
@@ -52,6 +62,7 @@ describe.skipIf(!shouldRunIntegrationTests())('Autenticación HTTP', () => {
     const queryRunner = AppDataSource.createQueryRunner();
     try {
       await migration.up(queryRunner);
+      await companyNameMigration.up(queryRunner);
     } finally {
       await queryRunner.release();
     }
@@ -92,11 +103,48 @@ describe.skipIf(!shouldRunIntegrationTests())('Autenticación HTTP', () => {
     expect(rows[0]?.password_hash).not.toBe(password);
   });
 
-  it('acepta registro con rol EMPLOYER', async () => {
-    const response = await registerUser(`${randomUUID()}@test.local`, 'EMPLOYER');
+  it('acepta registro con rol EMPLOYER y persiste companyName', async () => {
+    const email = `${randomUUID()}@test.local`;
+    const response = await registerUser(email, 'EMPLOYER');
 
     expect(response.status).toBe(201);
     expect(response.body.user.role).toBe('EMPLOYER');
+    expect(response.body).not.toHaveProperty('companyName');
+    expect(response.body.user).not.toHaveProperty('companyName');
+
+    const rows: Array<{ company_name: string | null }> =
+      await AppDataSource.query(
+        `SELECT company_name FROM users WHERE email = $1`,
+        [email],
+      );
+    expect(rows[0]?.company_name).toBe('Empresa de prueba');
+  });
+
+  it('rechaza registro EMPLOYER sin companyName con 400', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: `${randomUUID()}@test.local`,
+        password,
+        role: 'EMPLOYER',
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rechaza companyName en registro CANDIDATE con 400', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: `${randomUUID()}@test.local`,
+        password,
+        role: 'CANDIDATE',
+        companyName: 'Acme S.A.',
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('rechaza email duplicado con 409', async () => {

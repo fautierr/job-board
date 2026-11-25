@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { getEnv } from '../../src/config/env';
+import { AddCompanyName1795584000000 } from '../../src/db/migrations/1795584000000-add-company-name';
 import { InitialSchema1764038400000 } from '../../src/db/migrations/1764038400000-initial-schema';
 import { Application } from '../../src/modules/applications/applications.entity';
 import { Offer } from '../../src/modules/offers/offers.entity';
@@ -33,7 +34,7 @@ export function createTestDataSource(): DataSource {
     password: env.DB_PASSWORD,
     database: env.TEST_DB_NAME,
     entities: [User, Offer, Application],
-    migrations: [InitialSchema1764038400000],
+    migrations: [InitialSchema1764038400000, AddCompanyName1795584000000],
     synchronize: false,
     migrationsRun: false,
     logging: false,

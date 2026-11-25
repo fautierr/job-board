@@ -4,6 +4,7 @@ import { getEnv } from '../config/env';
 import { Application } from '../modules/applications/applications.entity';
 import { Offer } from '../modules/offers/offers.entity';
 import { User } from '../modules/users/users.entity';
+import { AddCompanyName1795584000000 } from './migrations/1795584000000-add-company-name';
 import { InitialSchema1764038400000 } from './migrations/1764038400000-initial-schema';
 
 export function buildDataSourceOptions(database?: string): DataSourceOptions {
@@ -17,7 +18,7 @@ export function buildDataSourceOptions(database?: string): DataSourceOptions {
     password: env.DB_PASSWORD,
     database: database ?? env.DB_NAME,
     entities: [User, Offer, Application],
-    migrations: [InitialSchema1764038400000],
+    migrations: [InitialSchema1764038400000, AddCompanyName1795584000000],
     synchronize: false,
     migrationsRun: false,
     logging: false,

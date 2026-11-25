@@ -34,6 +34,7 @@ function makeOffer(overrides: Partial<Offer> = {}): Offer {
   return {
     id: 'offer-1',
     employerId: 'employer-1',
+    employer: { companyName: 'Acme S.A.' } as Offer['employer'],
     title: createDto.title,
     description: createDto.description,
     category: createDto.category,
@@ -74,7 +75,11 @@ describe('offers.service', () => {
     const result = await offersService.findPublished(filters);
 
     expect(mockedFindPublished).toHaveBeenCalledWith(filters);
+    expect(result[0]).toMatchObject({ companyName: 'Acme S.A.' });
     expect(result[0]).not.toHaveProperty('employerId');
+    expect(result[0]).not.toHaveProperty('employer');
+    expect(result[0]).not.toHaveProperty('email');
+    expect(result[0]).not.toHaveProperty('passwordHash');
   });
 
   it('busca el detalle público y lanza 404 si no está publicada', async () => {
@@ -83,6 +88,7 @@ describe('offers.service', () => {
 
     await expect(offersService.findPublishedById('offer-1')).resolves.toMatchObject({
       id: 'offer-1',
+      companyName: 'Acme S.A.',
     });
     await expect(offersService.findPublishedById('offer-2')).rejects.toMatchObject({
       statusCode: 404,
