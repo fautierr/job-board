@@ -23,6 +23,10 @@ export interface OfferDto {
   updatedAt: Date;
 }
 
+export interface PublicOfferDto extends OfferDto {
+  companyName: string;
+}
+
 const ALLOWED_TRANSITIONS: Record<OfferStatus, readonly OfferStatus[]> = {
   PUBLISHED: ['PAUSED', 'CLOSED'],
   PAUSED: ['PUBLISHED', 'CLOSED'],
@@ -58,18 +62,27 @@ export async function create(
   return toOfferDto(offer);
 }
 
-export async function findPublished(filters: OfferFilters): Promise<OfferDto[]> {
-  const offers = await offersRepository.findPublished(filters);
-  return offers.map(toOfferDto);
+function toPublicOfferDto(offer: Offer): PublicOfferDto {
+  return {
+    ...toOfferDto(offer),
+    companyName: offer.employer.companyName as string,
+  };
 }
 
-export async function findPublishedById(id: string): Promise<OfferDto> {
+export async function findPublished(
+  filters: OfferFilters,
+): Promise<PublicOfferDto[]> {
+  const offers = await offersRepository.findPublished(filters);
+  return offers.map(toPublicOfferDto);
+}
+
+export async function findPublishedById(id: string): Promise<PublicOfferDto> {
   const offer = await offersRepository.findPublishedById(id);
   if (!offer) {
     throw new NotFoundError('Oferta no encontrada');
   }
 
-  return toOfferDto(offer);
+  return toPublicOfferDto(offer);
 }
 
 export async function findByEmployer(employerId: string): Promise<OfferDto[]> {

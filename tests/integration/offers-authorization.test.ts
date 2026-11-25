@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app';
 import { AppDataSource } from '../../src/db/data-source';
+import { AddCompanyName1795584000000 } from '../../src/db/migrations/1795584000000-add-company-name';
 import { InitialSchema1764038400000 } from '../../src/db/migrations/1764038400000-initial-schema';
 import {
   shouldRunIntegrationTests,
@@ -21,6 +22,7 @@ const ENUM_NAMES = [
 
 const app = createApp();
 const migration = new InitialSchema1764038400000();
+const companyNameMigration = new AddCompanyName1795584000000();
 const password = 'password-de-prueba';
 
 const validOffer = {
@@ -47,6 +49,7 @@ async function applyMigration(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
   try {
     await migration.up(queryRunner);
+    await companyNameMigration.up(queryRunner);
   } finally {
     await queryRunner.release();
   }
@@ -57,6 +60,7 @@ async function registerUser(role: 'EMPLOYER' | 'CANDIDATE') {
     email: `${randomUUID()}@test.local`,
     password,
     role,
+    ...(role === 'EMPLOYER' ? { companyName: 'Empresa de prueba' } : {}),
   });
 
   expect(response.status).toBe(201);

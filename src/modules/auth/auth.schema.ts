@@ -1,13 +1,27 @@
 import { z } from 'zod';
-import { USER_ROLES } from '../../shared/constants/work-offer-values';
 
 const email = z.string().trim().toLowerCase().email();
 
-export const registerSchema = z.object({
+const registerBase = {
   email,
   password: z.string().min(8).max(128),
-  role: z.enum([...USER_ROLES]),
-});
+};
+
+export const registerSchema = z.discriminatedUnion('role', [
+  z
+    .object({
+      ...registerBase,
+      role: z.literal('EMPLOYER'),
+      companyName: z.string().trim().min(1).max(120),
+    })
+    .strict(),
+  z
+    .object({
+      ...registerBase,
+      role: z.literal('CANDIDATE'),
+    })
+    .strict(),
+]);
 
 export const loginSchema = z.object({
   email,

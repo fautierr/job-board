@@ -28,6 +28,9 @@ export class User {
   @Column({ type: 'enum', enum: [...USER_ROLES], enumName: 'user_role' })
   role!: UserRole;
 
+  @Column({ name: 'company_name', type: 'text', nullable: true })
+  companyName!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -47,6 +47,7 @@ export async function register(dto: RegisterDto): Promise<AuthResult> {
       email: dto.email,
       passwordHash,
       role: dto.role,
+      companyName: dto.role === 'EMPLOYER' ? dto.companyName : null,
     });
   } catch (error) {
     if (isUniqueViolation(error)) {

@@ -16,6 +16,7 @@ export async function create(data: {
   email: string;
   passwordHash: string;
   role: UserRole;
+  companyName: string | null;
 }): Promise<User> {
   const user = repository().create(data);
   return repository().save(user);

@@ -7,12 +7,14 @@ describe('auth schemas', () => {
       email: '  Usuario@Example.COM ',
       password: 'password123',
       role: 'EMPLOYER',
+      companyName: '  Acme S.A.  ',
     });
 
     expect(parsed).toEqual({
       email: 'usuario@example.com',
       password: 'password123',
       role: 'EMPLOYER',
+      companyName: 'Acme S.A.',
     });
   });
 
@@ -22,6 +24,31 @@ describe('auth schemas', () => {
         email: 'no-es-email',
         password: 'corto',
         role: 'ADMIN',
+      }),
+    ).toThrow();
+  });
+
+  it('exige companyName no vacío y con longitud máxima para EMPLOYER', () => {
+    const base = {
+      email: 'empresa@example.com',
+      password: 'password123',
+      role: 'EMPLOYER',
+    };
+
+    expect(() => registerSchema.parse(base)).toThrow();
+    expect(() => registerSchema.parse({ ...base, companyName: '   ' })).toThrow();
+    expect(() =>
+      registerSchema.parse({ ...base, companyName: 'x'.repeat(121) }),
+    ).toThrow();
+  });
+
+  it('rechaza companyName en el registro de CANDIDATE', () => {
+    expect(() =>
+      registerSchema.parse({
+        email: 'persona@example.com',
+        password: 'password123',
+        role: 'CANDIDATE',
+        companyName: 'Acme S.A.',
       }),
     ).toThrow();
   });
