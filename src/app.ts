@@ -1,5 +1,9 @@
 import express, { type Express } from 'express';
 import { errorHandler } from './middlewares/error-handler';
+import {
+  applicationsRouter,
+  myApplicationsRouter,
+} from './modules/applications/applications.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { myOffersRouter, offersRouter } from './modules/offers/offers.routes';
 import { NotFoundError } from './shared/errors';
@@ -10,7 +14,9 @@ export function createApp(): Express {
   app.use(express.json());
   app.use('/api/auth', authRouter);
   app.use('/api/offers', offersRouter);
+  app.use('/api/offers', applicationsRouter);
   app.use('/api/me/offers', myOffersRouter);
+  app.use('/api/me/applications', myApplicationsRouter);
 
   app.use((_req, _res, next) => {
     next(new NotFoundError());
