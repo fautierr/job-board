@@ -55,13 +55,23 @@ export class Offer {
   @Column({ type: 'enum', enum: [...SENIORITIES], enumName: 'seniority' })
   seniority!: Seniority;
 
-  @Column({ type: 'enum', enum: [...WORK_MODES], enumName: 'work_mode' })
+  @Column({
+    name: 'work_mode',
+    type: 'enum',
+    enum: [...WORK_MODES],
+    enumName: 'work_mode',
+  })
   workMode!: WorkMode;
 
   @Column({ type: 'enum', enum: [...WORKDAYS], enumName: 'workday' })
   workday!: Workday;
 
-  @Column({ type: 'enum', enum: [...CONTRACT_TYPES], enumName: 'contract_type' })
+  @Column({
+    name: 'contract_type',
+    type: 'enum',
+    enum: [...CONTRACT_TYPES],
+    enumName: 'contract_type',
+  })
   contractType!: ContractType;
 
   @Column({

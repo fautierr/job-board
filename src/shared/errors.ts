@@ -40,3 +40,9 @@ export class ConflictError extends AppError {
     super(409, code, message, details);
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor(message = 'Acceso denegado') {
+    super(403, 'FORBIDDEN', message);
+  }
+}
