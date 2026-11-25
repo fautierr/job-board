@@ -1,3 +1,4 @@
+import type { Offer } from '../modules/offers/offers.entity';
 import type { UserRole } from '../shared/constants/work-offer-values';
 
 declare global {
@@ -8,6 +9,7 @@ declare global {
         email: string;
         role: UserRole;
       };
+      offer?: Offer;
     }
   }
 }
