@@ -27,6 +27,20 @@ export interface PublicOfferDto extends OfferDto {
   companyName: string;
 }
 
+export interface PaginationMetadata {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+export interface PublishedOffersResponse {
+  offers: PublicOfferDto[];
+  pagination: PaginationMetadata;
+}
+
 const ALLOWED_TRANSITIONS: Record<OfferStatus, readonly OfferStatus[]> = {
   PUBLISHED: ['PAUSED', 'CLOSED'],
   PAUSED: ['PUBLISHED', 'CLOSED'],
@@ -71,9 +85,21 @@ function toPublicOfferDto(offer: Offer): PublicOfferDto {
 
 export async function findPublished(
   filters: OfferFilters,
-): Promise<PublicOfferDto[]> {
-  const offers = await offersRepository.findPublished(filters);
-  return offers.map(toPublicOfferDto);
+): Promise<PublishedOffersResponse> {
+  const { offers, total } = await offersRepository.findPublished(filters);
+  const totalPages = Math.ceil(total / filters.limit);
+
+  return {
+    offers: offers.map(toPublicOfferDto),
+    pagination: {
+      page: filters.page,
+      limit: filters.limit,
+      total,
+      totalPages,
+      hasNext: filters.page < totalPages,
+      hasPrevious: totalPages > 0 && filters.page > 1,
+    },
+  };
 }
 
 export async function findPublishedById(id: string): Promise<PublicOfferDto> {

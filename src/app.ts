@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import { cors } from './middlewares/cors';
 import { errorHandler } from './middlewares/error-handler';
 import {
   applicationsRouter,
@@ -11,6 +12,7 @@ import { NotFoundError } from './shared/errors';
 export function createApp(): Express {
   const app = express();
 
+  app.use(cors);
   app.use(express.json());
   app.use('/api/auth', authRouter);
   app.use('/api/offers', offersRouter);

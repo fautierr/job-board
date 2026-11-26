@@ -68,18 +68,49 @@ describe('offers.service', () => {
     expect(result).not.toHaveProperty('employerId');
   });
 
-  it('pasa los filtros al repositorio sin incluir datos del empleador', async () => {
-    const filters = { category: 'ADMINISTRATION' as const };
-    mockedFindPublished.mockResolvedValue([makeOffer()]);
+  it('pasa filtros y paginación al repositorio sin incluir datos del empleador', async () => {
+    const filters = {
+      category: 'ADMINISTRATION' as const,
+      q: 'node',
+      page: 2,
+      limit: 20,
+    };
+    mockedFindPublished.mockResolvedValue({ offers: [makeOffer()], total: 21 });
 
     const result = await offersService.findPublished(filters);
 
     expect(mockedFindPublished).toHaveBeenCalledWith(filters);
-    expect(result[0]).toMatchObject({ companyName: 'Acme S.A.' });
-    expect(result[0]).not.toHaveProperty('employerId');
-    expect(result[0]).not.toHaveProperty('employer');
-    expect(result[0]).not.toHaveProperty('email');
-    expect(result[0]).not.toHaveProperty('passwordHash');
+    expect(result.offers[0]).toMatchObject({ companyName: 'Acme S.A.' });
+    expect(result.offers[0]).not.toHaveProperty('employerId');
+    expect(result.offers[0]).not.toHaveProperty('employer');
+    expect(result.offers[0]).not.toHaveProperty('email');
+    expect(result.offers[0]).not.toHaveProperty('passwordHash');
+    expect(result.pagination).toEqual({
+      page: 2,
+      limit: 20,
+      total: 21,
+      totalPages: 2,
+      hasNext: false,
+      hasPrevious: true,
+    });
+  });
+
+  it('devuelve metadatos consistentes cuando no hay resultados', async () => {
+    mockedFindPublished.mockResolvedValue({ offers: [], total: 0 });
+
+    const result = await offersService.findPublished({ page: 3, limit: 10 });
+
+    expect(result).toEqual({
+      offers: [],
+      pagination: {
+        page: 3,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    });
   });
 
   it('busca el detalle público y lanza 404 si no está publicada', async () => {

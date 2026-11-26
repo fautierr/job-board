@@ -87,6 +87,9 @@ describe('offers schemas', () => {
         workMode: 'HYBRID',
         workday: 'PART_TIME',
         contractType: 'INTERNSHIP',
+        q: '  node  ',
+        page: '2',
+        limit: '20',
       }),
     ).toEqual({
       category: 'ADMINISTRATION',
@@ -94,6 +97,9 @@ describe('offers schemas', () => {
       workMode: 'HYBRID',
       workday: 'PART_TIME',
       contractType: 'INTERNSHIP',
+      q: 'node',
+      page: 2,
+      limit: 20,
     });
     expect(() =>
       offerFiltersSchema.parse({ contractType: 'DESCONOCIDO' }),
@@ -102,5 +108,13 @@ describe('offers schemas', () => {
     const id = randomUUID();
     expect(offerIdParamSchema.parse({ id })).toEqual({ id });
     expect(() => offerIdParamSchema.parse({ id: 'no-uuid' })).toThrow();
+  });
+
+  it('aplica defaults de paginación y valida sus límites', () => {
+    expect(offerFiltersSchema.parse({})).toMatchObject({ page: 1, limit: 10 });
+    expect(() => offerFiltersSchema.parse({ page: '0' })).toThrow();
+    expect(() => offerFiltersSchema.parse({ limit: '51' })).toThrow();
+    expect(() => offerFiltersSchema.parse({ q: '   ' })).toThrow();
+    expect(() => offerFiltersSchema.parse({ q: 'x'.repeat(121) })).toThrow();
   });
 });

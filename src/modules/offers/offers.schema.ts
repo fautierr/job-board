@@ -38,6 +38,9 @@ export const offerFiltersSchema = z.object({
   workMode: z.enum([...WORK_MODES]).optional(),
   workday: z.enum([...WORKDAYS]).optional(),
   contractType: z.enum([...CONTRACT_TYPES]).optional(),
+  q: z.string().trim().min(1).max(120).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
 export const offerIdParamSchema = z.object({ id: z.uuid() }).strict();
