@@ -19,8 +19,10 @@ export async function listPublished(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const offers = await offersService.findPublished(req.query as OfferFilters);
-  res.status(200).json({ offers });
+  const result = await offersService.findPublished(
+    req.query as unknown as OfferFilters,
+  );
+  res.status(200).json(result);
 }
 
 export async function getPublishedById(

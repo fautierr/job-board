@@ -413,4 +413,135 @@ describe.skipIf(!shouldRunIntegrationTests())('Ofertas HTTP', () => {
       .send({ title: 'Nuevo título' });
     expect(protectedUpdate.status).toBe(400);
   });
+
+  it('pagina el listado público y devuelve metadatos', async () => {
+    const employer = await registerUser();
+    const created: string[] = [];
+    for (let index = 0; index < 12; index += 1) {
+      created.push((await createOffer(employer.token, { title: `Oferta ${index}` })).id);
+    }
+
+    const firstPage = await request(app).get('/api/offers');
+    const secondPage = await request(app)
+      .get('/api/offers')
+      .query({ page: '2', limit: '10' });
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body.offers).toHaveLength(10);
+    expect(firstPage.body.pagination).toEqual({
+      page: 1,
+      limit: 10,
+      total: 12,
+      totalPages: 2,
+      hasNext: true,
+      hasPrevious: false,
+    });
+
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body.offers).toHaveLength(2);
+    expect(secondPage.body.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 12,
+      totalPages: 2,
+      hasNext: false,
+      hasPrevious: true,
+    });
+    expect(
+      new Set([...firstPage.body.offers, ...secondPage.body.offers].map((offer: { id: string }) => offer.id)).size,
+    ).toBe(created.length);
+  });
+
+  it('responde 200 con resultados vacíos para páginas fuera de rango y búsquedas sin coincidencias', async () => {
+    const employer = await registerUser();
+    await createOffer(employer.token);
+
+    const outOfRange = await request(app)
+      .get('/api/offers')
+      .query({ page: '99', limit: '10' });
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body.offers).toEqual([]);
+    expect(outOfRange.body.pagination).toEqual({
+      page: 99,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrevious: true,
+    });
+
+    const noMatches = await request(app)
+      .get('/api/offers')
+      .query({ q: 'no-existe' });
+    expect(noMatches.status).toBe(200);
+    expect(noMatches.body.offers).toEqual([]);
+    expect(noMatches.body.pagination).toEqual({
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+    });
+  });
+
+  it('busca por título, descripción y empresa, y combina búsqueda, filtros y paginación', async () => {
+    const employerA = await registerUser('EMPLOYER', 'Acme Tech');
+    const employerB = await registerUser('EMPLOYER', 'Globex');
+    const byTitle = await createOffer(employerA.token, {
+      title: 'Backend Node',
+      description: 'API REST',
+    });
+    const byCompany = await createOffer(employerB.token, {
+      title: 'Analista',
+      description: 'Reportes',
+    });
+    const byDescription = await createOffer(employerA.token, {
+      title: 'Otro puesto',
+      description: 'Trabajo con Kubernetes',
+    });
+    const admin = await createOffer(employerA.token, {
+      title: 'Backend Admin',
+      description: 'API REST',
+      category: 'ADMINISTRATION',
+    });
+
+    const title = await request(app).get('/api/offers').query({ q: 'node' });
+    const company = await request(app).get('/api/offers').query({ q: 'globex' });
+    const description = await request(app).get('/api/offers').query({ q: 'kubernetes' });
+    const combined = await request(app).get('/api/offers').query({
+      q: 'api',
+      category: 'ADMINISTRATION',
+      page: '1',
+      limit: '1',
+    });
+
+    expect(ids(title.body.offers)).toEqual([byTitle.id]);
+    expect(ids(company.body.offers)).toEqual([byCompany.id]);
+    expect(ids(description.body.offers)).toEqual([byDescription.id]);
+    expect(ids(combined.body.offers)).toEqual([admin.id]);
+    expect(combined.body.pagination).toMatchObject({
+      page: 1,
+      limit: 1,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrevious: false,
+    });
+  });
+
+  it('valida page, limit y q en el listado público', async () => {
+    const invalidPage = await request(app)
+      .get('/api/offers')
+      .query({ page: '0' });
+    const invalidLimit = await request(app)
+      .get('/api/offers')
+      .query({ limit: '51' });
+    const invalidQ = await request(app).get('/api/offers').query({ q: '   ' });
+
+    expect(invalidPage.status).toBe(400);
+    expect(invalidPage.body.error.code).toBe('VALIDATION_ERROR');
+    expect(invalidLimit.status).toBe(400);
+    expect(invalidQ.status).toBe(400);
+  });
 });

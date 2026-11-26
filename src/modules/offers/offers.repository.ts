@@ -30,7 +30,18 @@ export async function create(data: CreateOfferData): Promise<Offer> {
   return repository().save(offer);
 }
 
-export async function findPublished(filters: OfferFilters): Promise<Offer[]> {
+export interface PublishedOffersResult {
+  offers: Offer[];
+  total: number;
+}
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+export async function findPublished(
+  filters: OfferFilters,
+): Promise<PublishedOffersResult> {
   const query = repository()
     .createQueryBuilder('offer')
     .innerJoinAndSelect('offer.employer', 'employer')
@@ -53,8 +64,20 @@ export async function findPublished(filters: OfferFilters): Promise<Offer[]> {
       contractType: filters.contractType,
     });
   }
+  if (filters.q) {
+    query.andWhere(
+      '(offer.title ILIKE :q OR offer.description ILIKE :q OR employer.companyName ILIKE :q)',
+      { q: `%${escapeLike(filters.q)}%` },
+    );
+  }
 
-  return query.orderBy('offer.createdAt', 'DESC').getMany();
+  const [offers, total] = await query
+    .orderBy('offer.createdAt', 'DESC')
+    .skip((filters.page - 1) * filters.limit)
+    .take(filters.limit)
+    .getManyAndCount();
+
+  return { offers, total };
 }
 
 export async function findPublishedById(id: string): Promise<Offer | null> {
