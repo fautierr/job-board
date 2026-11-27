@@ -17,6 +17,7 @@ describe('loadEnv', () => {
       NODE_ENV: 'development',
       PORT: 3000,
       DB_PORT: 5432,
+      DB_SSL: false,
       TEST_DB_NAME: 'job_board_db_test',
       CORS_ALLOWED_ORIGINS: ['http://localhost:5173'],
     });
@@ -54,6 +55,22 @@ describe('loadEnv', () => {
 
   it('rechaza un NODE_ENV desconocido', () => {
     expect(() => loadEnv({ ...baseEnv, NODE_ENV: 'staging' })).toThrow(/NODE_ENV/);
+  });
+
+  it('deja DB_SSL en false cuando la variable está ausente', () => {
+    expect(loadEnv(baseEnv).DB_SSL).toBe(false);
+  });
+
+  it('respeta DB_SSL=false', () => {
+    expect(loadEnv({ ...baseEnv, DB_SSL: 'false' }).DB_SSL).toBe(false);
+  });
+
+  it('respeta DB_SSL=true', () => {
+    expect(loadEnv({ ...baseEnv, DB_SSL: 'true' }).DB_SSL).toBe(true);
+  });
+
+  it('rechaza un valor inválido de DB_SSL', () => {
+    expect(() => loadEnv({ ...baseEnv, DB_SSL: 'yes' })).toThrow(/DB_SSL/);
   });
 
   it('rechaza JWT_SECRET vacío', () => {
