@@ -17,6 +17,7 @@ export function buildDataSourceOptions(database?: string): DataSourceOptions {
     username: env.DB_USER,
     password: env.DB_PASSWORD,
     database: database ?? env.DB_NAME,
+    ssl: env.DB_SSL ? true : false,
     entities: [User, Offer, Application],
     migrations: [InitialSchema1764038400000, AddCompanyName1795584000000],
     synchronize: false,

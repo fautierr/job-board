@@ -46,6 +46,10 @@ export const envSchema = z.object({
   DB_USER: z.string().trim().min(1, 'DB_USER es obligatorio'),
   DB_PASSWORD: z.string().min(1, 'DB_PASSWORD debe completarse en el .env local'),
   DB_NAME: z.string().trim().min(1, 'DB_NAME es obligatorio'),
+  DB_SSL: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   TEST_DB_NAME: z.string().trim().min(1).default('job_board_db_test'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET debe completarse en el .env local'),
   CORS_ALLOWED_ORIGINS: corsAllowedOrigins,

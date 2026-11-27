@@ -295,6 +295,7 @@ Variables de entorno:
 | `DB_USER` | Usuario de PostgreSQL | Obligatoria |
 | `DB_PASSWORD` | Contraseña de PostgreSQL | Obligatoria |
 | `DB_NAME` | Base de desarrollo | Obligatoria |
+| `DB_SSL` | Habilita TLS en la conexión (`true`/`false`) | `false` |
 | `TEST_DB_NAME` | Base exclusiva de tests | `job_board_db_test` |
 | `JWT_SECRET` | Secreto para firmar JWT | Obligatoria |
 | `CORS_ALLOWED_ORIGINS` | Orígenes CORS permitidos, separados por coma | `http://localhost:5173` |
@@ -309,6 +310,7 @@ DB_PORT=5432
 DB_USER=jobboard_user
 DB_PASSWORD=valor-ficticio
 DB_NAME=job_board_db
+DB_SSL=false
 TEST_DB_NAME=job_board_db_test
 JWT_SECRET=secreto-ficticio-cambiar
 CORS_ALLOWED_ORIGINS=http://localhost:5173
